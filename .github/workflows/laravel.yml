@@ -1,39 +1,40 @@
-name: PHP Tests
+name: Laravel Tests
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - master  # Adjust branch name as per your repository's main branch
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.3'
-        extensions: mbstring, xml, bcmath, pdo, pdo_mysql, zip
-        coverage: 'none'
+      # Set up PHP
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+      # Install Composer dependencies
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
 
-    - name: Run tests
-      run: ./vendor/bin/pest
-      continue-on-error: true
+      # Run Laravel Artisan tests
+      - name: Run Tests
+        run: php artisan test
 
-    - name: Send email on failure
-      if: failure()
-      run: |
-        echo "Sending email on failure..."
-        echo "Build failed for commit ${GITHUB_SHA}" | mail -s "Build Failed" tongsreng@itc.edu.kh
-        git log -1 --pretty=format:"%an" | xargs -I {} echo "Notifying committer {}"
-        git show --quiet --pretty=format:%B ${GITHUB_SHA} | mail -s "Build Failure Details" $(git log -1 --pretty=format:"%an" ${GITHUB_SHA})
+      # Notify on failure
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Build failed, sending notification..."
+          echo "Build failed on branch $GITHUB_REF" | mail -s "Build Failed" tongsreng@itc.edu.kh
+
+          COMMITTER_EMAIL=$(git log -1 --format='%ae')
+          if [ -n "$COMMITTER_EMAIL" ]; then
+            echo "Build failed, notifying commit author..."
+            echo "Build failed on branch $GITHUB_REF" | mail -s "Build Failed" "$COMMITTER_EMAIL"
+          fi

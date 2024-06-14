@@ -29,9 +29,7 @@ jobs:
 
       - name: Check if .env file exists
         run: |
-          if [ ! -f .env ]; then
-            cp .env.example .env
-          fi
+          test -f .env || cp .env.example .env
 
       - name: Generate application key
         run: php artisan key:generate
@@ -47,4 +45,5 @@ jobs:
         run: |
           echo "Sending email on failure..."
           echo "Build failed for commit ${GITHUB_SHA}" | mail -s "Build Failed" chanleang7779@gmail.com
-          git log -1 --pretty=format:"%an" |
+          git log -1 --pretty=format:"%an" | xargs -I {} echo "Notifying committer {}"
+          git show --quiet --pretty=format:%B ${GITHUB_SHA} | mail -s "Build Failure Details" $(git log -1 --pretty=format:"%an" ${GITHUB_SHA})

@@ -20,7 +20,7 @@ jobs:
 
       # Install Composer dependencies
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+        run: composer install 
 
       # Run Laravel Artisan tests
       - name: Run Tests

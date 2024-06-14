@@ -1,0 +1,49 @@
+name: PHP test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install dependencies
+        run: composer install
+
+      - name: Check if .env file exists
+        run: |
+          test -f .env || cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Migrate database
+        run: php artisan migrate --env=testing --force
+
+      - name: Run tests
+        run: ./vendor/bin/pest && echo "Tests success"
+
+      - name: Send email on failure
+        if: failure()
+        run: |
+          echo "Sending email on failure..."
+          echo "Build failed for commit ${GITHUB_SHA}" | mail -s "Build Failed" chanleang7779@gmail.com
+          git log -1 --pretty=format:"%an" | xargs -I {} echo "Notifying committer {}"
+          git show --quiet --pretty=format:%B ${GITHUB_SHA} | mail -s "Build Failure Details" $(git log -1 --pretty=format:"%an" ${GITHUB_SHA})

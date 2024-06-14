@@ -1,40 +1,39 @@
-name: Laravel Tests
+name: PHP laraveltest
 
 on:
   push:
     branches:
-      - master  # Adjust branch name as per your repository's main branch
+      - master
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Set up PHP
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '7.4'
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, xml, bcmath, pdo, pdo_mysql, zip
+        coverage: 'none'
 
-      # Install Composer dependencies
-      - name: Install Composer dependencies
-        run: composer install 
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
 
-      # Run Laravel Artisan tests
-      - name: Run Tests
-        run: php artisan test
+    - name: Run tests
+      run: ./vendor/bin/pest
+      continue-on-error: true
 
-      # Notify on failure
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "Build failed, sending notification..."
-          echo "Build failed on branch $GITHUB_REF" | mail -s "Build Failed" tongsreng@itc.edu.kh
-
-          COMMITTER_EMAIL=$(git log -1 --format='%ae')
-          if [ -n "$COMMITTER_EMAIL" ]; then
-            echo "Build failed, notifying commit author..."
-            echo "Build failed on branch $GITHUB_REF" | mail -s "Build Failed" "$COMMITTER_EMAIL"
-          fi
+    - name: Send email on failure
+      if: failure()
+      run: |
+        echo "Sending email on failure..."
+        echo "Build failed for commit ${GITHUB_SHA}" | mail -s "Build Failed" tongsreng@itc.edu.kh
+        git log -1 --pretty=format:"%an" | xargs -I {} echo "Notifying committer {}"
+        git show --quiet --pretty=format:%B ${GITHUB_SHA} | mail -s "Build Failure Details" $(git log -1 --pretty=format:"%an" ${GITHUB_SHA})

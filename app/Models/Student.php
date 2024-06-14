@@ -9,20 +9,7 @@ class Student extends Model
 {
     use HasFactory;
 
-    public static function createAndAssert($data)
-    {
-        $student = Student::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'dob' => $data['dob'],
-        ]);
-
-        // Example of assertion (this might vary based on your testing setup)
-        if ($student->exists()) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    protected $fillable = ['name', 'email', 'phone', 'dob'];
+   
 }
+
